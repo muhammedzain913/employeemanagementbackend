@@ -50,6 +50,7 @@ async function createEmployee(payload) {
     department,
     jobTitle,
     hireDate,
+    leaveAllocationDays,
   } = payload;
 
   if (!email || !password || !name || roleId === undefined || roleId === null) {
@@ -74,6 +75,15 @@ async function createEmployee(payload) {
   const hashedPassword = await bcrypt.hash(password, salt);
   const hire = parseHireDate(hireDate);
 
+  let allocation = 20;
+  if (leaveAllocationDays !== undefined && leaveAllocationDays !== null && leaveAllocationDays !== '') {
+    const a = Number(leaveAllocationDays);
+    if (!Number.isInteger(a) || a < 0 || a > 366) {
+      throw new Error('leaveAllocationDays must be an integer from 0 to 366');
+    }
+    allocation = a;
+  }
+
   const user = await prisma.user.create({
     data: {
       email,
@@ -87,6 +97,7 @@ async function createEmployee(payload) {
           department: department || null,
           jobTitle: jobTitle || null,
           hireDate: hire,
+          leaveAllocationDays: allocation,
         },
       },
     },
@@ -123,6 +134,7 @@ async function updateEmployee(userId, payload) {
     jobTitle,
     hireDate,
     status,
+    leaveAllocationDays,
   } = payload;
 
   if (status !== undefined && status !== null && status !== '') {
@@ -164,6 +176,13 @@ async function updateEmployee(userId, payload) {
     if (hireDate !== undefined) profileData.hireDate = hire;
     if (status !== undefined && status !== null && status !== '') {
       profileData.status = status;
+    }
+    if (leaveAllocationDays !== undefined && leaveAllocationDays !== null && leaveAllocationDays !== '') {
+      const a = Number(leaveAllocationDays);
+      if (!Number.isInteger(a) || a < 0 || a > 366) {
+        throw new Error('leaveAllocationDays must be an integer from 0 to 366');
+      }
+      profileData.leaveAllocationDays = a;
     }
 
     if (Object.keys(profileData).length) {
