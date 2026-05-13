@@ -4,12 +4,12 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User{
@@ -19,7 +19,33 @@ model User{
   name      String
   roleId    Int      // Foreign Key
   role      Role     @relation(fields: [roleId], references: [id])
+  attendance Attendance[]
+  leave Leave[]
+  employeeProfile EmployeeProfile?
   createdAt DateTime @default(now())
+}
+
+model EmployeeProfile {
+  id           Int             @id @default(autoincrement())
+  userId       Int             @unique
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeCode String          @unique
+  phone        String?
+  department   String?
+  jobTitle     String?
+  hireDate     DateTime?
+  status       EmployeeStatus  @default(ACTIVE)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([department])
+  @@index([status])
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
 }
 
 model Role{
@@ -27,4 +53,49 @@ model Role{
   name        String   @unique // e.g., "ADMIN", "MANAGER", "EMPLOYEE"
   description String?
   users       User[]
+}
+
+model Attendance {
+  id          Int       @id @default(autoincrement())
+  checkIn     DateTime  @default(now())
+  checkOut    DateTime?
+ 
+  latitude    Float?
+  longitude   Float?
+  
+  // Relations
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, checkIn]) // Optimization for "Employee-wise Attendance View" [cite: 63, 109] 
+}
+
+model Leave {
+  id          Int         @id @default(autoincrement())
+  startDate   DateTime
+  endDate     DateTime
+  reason      String      @db.Text
+  
+  // Role-based Status Tracking [cite: 42, 71, 89]
+  status      LeaveStatus @default(PENDING)
+  
+  // Remarks Handling for Approve/Reject actions [cite: 92]
+  adminRemarks String?    @db.Text
+  
+  // Relations
+  userId      Int
+  user        User        @relation(fields: [userId], references: [id])
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
