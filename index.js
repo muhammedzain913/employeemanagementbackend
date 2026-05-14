@@ -10,10 +10,14 @@ const leaveRoutes = require('./src/routes/leave.routes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3001')
+let allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3001')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
+if (allowedOrigins.length === 0) {
+  allowedOrigins = ['http://localhost:3001'];
+}
+console.info(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
 
 app.use(
   cors({
